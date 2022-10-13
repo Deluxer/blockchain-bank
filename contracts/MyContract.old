@@ -1,0 +1,48 @@
+pragma solidity ^0.5.0;
+
+contract MyContract {
+
+    address[16] public perrosAdoptados;
+    uint public balanceWei = 0;
+    address payable public admin = 0x31Be7B56d989c5BDcb7D27C6cA4a16098C20bEFe;
+
+    function getBalanceWei() public view returns (uint) {
+        return balanceWei;
+    }
+
+    function getBalanceTotalWei() public view returns (uint) {
+        return address(this).balance;
+    }
+
+    function cambiarAdmin(address nuevoAdmin) public {
+        require(msg.sender == admin, 'No eres el admin');
+        admin = address(uint160(nuevoAdmin));
+    }
+
+    function retirarBalance() public {
+        require(msg.sender == admin, 'No eres el admin');
+        admin.transfer(balanceWei);
+        balanceWei = 0;
+    }
+
+    function adoptar(uint perroIndex) payable public returns (bool) {
+        require(perroIndex >= 0 && perroIndex <=15, 'Fuera de rango');
+        require(msg.value == 0.1 ether, 'Cantidad no adecuada para la adopcion');
+        balanceWei = balanceWei + msg.value;
+
+        bool adoptarConExito = true;
+
+        if (perrosAdoptados[perroIndex] == address(0)) {
+            perrosAdoptados[perroIndex] = msg.sender;
+        } else {
+            require(perrosAdoptados[perroIndex] == address(0), 'Este perro ya ha sido adoptado');
+            adoptarConExito = false;
+        }
+
+        return adoptarConExito;
+    }
+
+    function getPerrosAdoptados() public view returns (address[16] memory) {
+        return perrosAdoptados;
+    }
+}

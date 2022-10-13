@@ -1,0 +1,23 @@
+var Token = artifacts.require("Token");
+var Bank = artifacts.require("Bank");
+
+module.exports = function (deployer) {
+  var tokenDeloyed;
+  var banckDeployed;
+
+  deployer.deploy(Token)
+  .then(
+    _tokenDeployed => {
+      tokenDeloyed = _tokenDeployed;
+      console.log('Token address: '+tokenDeloyed.address);
+      return deployer.deploy(Bank, tokenDeloyed.address);
+    }
+  )
+  .then(
+    _backDeployed => {
+      banckDeployed = _backDeployed;
+      console.log('Back address: '+banckDeployed.address);
+      tokenDeloyed.passMinterRole(banckDeployed.address);
+    }
+  );
+};

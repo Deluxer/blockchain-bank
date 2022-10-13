@@ -1,0 +1,71 @@
+pragma solidity ^0.8.10;
+import './Token.sol';
+
+contract Bank {
+    
+    Token private token;
+    mapping(address => uint) public clientsBalanceBNB;
+    mapping(address => uint) public depositTimeStamp;
+    mapping(address => bool) public isDeposited;
+
+    constructor(Token _token) public {
+        token = _token;
+    }
+
+    function deposit() payable public {
+        clientsBalanceBNB[msg.sender] = clientsBalanceBNB[msg.sender] + msg.value;
+        // block.timestamp obtiene los segundos en el momento del deposito
+        depositTimeStamp[msg.sender] = block.timestamp;
+        isDeposited[msg.sender] = true;
+    }
+
+    function withdraw() public {
+        require(isDeposited[msg.sender] == true, 'Error, No tienes saldo para retirar');
+        
+        // obtiene el tiempo que ha trascurrido desde el ultimo deposito
+        uint depositoTotalTime = block.timestamp - depositTimeStamp[msg.sender];
+
+        // interes 10 000 %
+        // x100 (te devuelve 100 veces lo que depositaste)
+        // 31668017 segundos por año
+        uint interesPerSecond = (100*clientsBalanceBNB[msg.sender]) / 31668017;
+        uint interes = interesPerSecond+depositoTotalTime;
+
+        payable(msg.sender).transfer(clientsBalanceBNB[msg.sender] - 0.008 ether); // wei
+        clientsBalanceBNB[msg.sender] = 0;
+
+        // $ gas
+        token.mint(msg.sender, interes);
+        depositTimeStamp[msg.sender] = 0;
+        isDeposited[msg.sender] = false;
+    }
+
+    function buyToken() payable public {
+        require(msg.value > 0, 'Envia BNB');
+
+        uint tokenToSend = msg.value*2;
+        uint contractTokenBalance = token.balanceOf(address(this));
+
+        if (contractTokenBalance >= tokenToSend) {
+            token.transfer(msg.sender, tokenToSend);
+        } else {
+            token.mint(msg.sender, tokenToSend);
+        }
+    }
+
+    function sellToken(uint tokenToSell) public {
+        uint BNBwei = address(this).balance;
+        
+        if (BNBwei - 0.008 ether >= tokenToSell/2) {
+            require(token.balanceOf(msg.sender) >= tokenToSell, 'Insuficiente BNBwei en la cartera');
+            require(token.allowance(msg.sender, address(this)) >= tokenToSell, 'No approved');
+
+            token.transferFrom(msg.sender, address(this), tokenToSell);
+            uint BNBpay = tokenToSell/2 - 0.008 ether;
+            payable(msg.sender).transfer(BNBpay);
+
+        } else {
+            revert('No hay suficiente BNB');
+        }
+    }
+}

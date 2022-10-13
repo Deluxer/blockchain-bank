@@ -1,0 +1,21 @@
+pragma  solidity ^0.8.10;
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+contract Token is ERC20 {
+    address public minter;
+
+    constructor() public payable ERC20('Bmiw2','BMIW2') {
+        minter = msg.sender;
+    }
+
+    function mint(address account, uint256 ammount) public {
+        require(msg.sender == minter, 'Error, no eres el minter');
+        _mint(account, ammount);
+    }
+
+    function passMinterRole(address nuevoMinter) public returns (bool) {
+        require(msg.sender == minter, 'Error, no eres el minter');
+        minter = nuevoMinter;
+        return true;
+    }
+}
